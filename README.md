@@ -12,7 +12,7 @@
     <td><img src="https://github.com/user-attachments/assets/98b91043-f1e2-4d29-a4c6-3ed53ca37387" width="400"/></td>
   </tr>
   <tr>
-    <td><img src="https://github.com/user-attachments/assets/50fc8f8d-4fcb-4b20-9487-ad9998a4ede7" width="400"/></td>
+    <td><img src="https://github.com/user-attachments/assets/425d0a5a-be65-41b9-98d6-428f36badf3e" width="400"/></td>
     <td><img src="https://github.com/user-attachments/assets/c14ef420-651f-4803-810f-7daee80483cc" width="400"/></td>
   </tr>
   <tr>
@@ -40,7 +40,7 @@
 - 同步滚动预览
 - 支持自定义链接后缀（仅单文件上传时可用）
 - 支持设置访问次数限制
-- 文本分享支持pdf、png导出
+- 文本分享支持pdf、word文档、png图片导出
 - 支持自动保存草稿
   - 浏览器关闭前自动保存
   - 下次访问时可恢复
