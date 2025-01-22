@@ -16,16 +16,16 @@ An online clipboard and file sharing service based on Cloudflare Workers. Suppor
 
 <table>
   <tr>
-    <td><img src="image/1.png" width="400"/></td>
-    <td><img src="image/2.png" width="400"/></td>
+    <td><img src="./image/image1.png" width="400"/></td>
+    <td><img src="./image/image2.png" width="400"/></td>
   </tr>
   <tr>
-    <td><img src="image/3.png" width="400"/></td>
-    <td><img src="image/4.png" width="400"/></td>
+    <td><img src="./image/image3.png" width="400"/></td>
+    <td><img src="./image/image4.png" width="400"/></td>
   </tr>
   <tr>
-    <td><img src="image/5.png" width="400"/></td>
-    <td><img src="image/6.png" width="400"/></td>
+    <td><img src="./image/image5.png" width="400"/></td>
+    <td><img src="./image/image6.png" width="400"/></td>
   </tr>
 </table>
 
