@@ -230,7 +230,7 @@ body {
   margin-top: 1rem;
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, auto)); /* 自适应列宽 */
 }
 
 .input-group {
@@ -525,6 +525,26 @@ a.qr-btn {
 .close-btn:hover {
   border-color: #e74c3c;
   color: #e74c3c;
+}
+
+/* 备注输入 */
+.note-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--input-bg);
+  color: var(--text-color);
+  font-family: inherit;
+}
+
+.note-highlight {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.note-label {
+  margin-right: 4px;
 }
 
 /* 分享列表 */
@@ -1257,13 +1277,17 @@ a.qr-btn {
 .content table {
   margin: 1.5em 0;
   border-collapse: collapse;
-  width: 100%;
-  max-width: 100%;
+  width: 100%; /* 改回100% */
   border: 1px solid var(--border-color);
-  display: table;
-  table-layout: fixed;
-  font-size: 0.95em;
-  line-height: 1.5;
+  display: table; /* 改回table */
+  overflow-x: auto; /* 保留横向滚动 */
+}
+
+/* 添加表格容器来处理滚动 */
+.content .table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin: 1.5em 0;
 }
 
 .content table th,
@@ -1273,39 +1297,27 @@ a.qr-btn {
   text-align: left;
   vertical-align: top;
   line-height: 1.6;
-  word-wrap: break-word;
+  min-width: 100px; /* 调整最小列宽 */
+  max-width: none; /* 移除最大宽度限制 */
+  white-space: normal; /* 允许文字换行 */
+  word-break: break-word;
   overflow-wrap: break-word;
 }
 
-.content table th:nth-child(1),
-.content table td:nth-child(1) {
-  width: 15%;
+/* 表格行样式 */
+.content table tr {
+  background-color: var(--markdown-table-bg);
+  border-top: 1px solid var(--border-color);
 }
 
-.content table th:nth-child(2),
-.content table td:nth-child(2) {
-  width: 25%;
-}
-
-.content table th:nth-child(3),
-.content table td:nth-child(3) {
-  width: 60%;
+.content table tr:nth-child(2n) {
+  background-color: var(--markdown-table-alt-bg);
 }
 
 /* 表头样式 */
 .content table th {
   background: var(--secondary-bg);
-  color: var(--text-color);
-}
-
-/* 表格行样式 */
-.content table tr {
-  background-color: #ffffff;
-  border-top: 1px solid var(--border-color);
-}
-
-.content table tr:nth-child(2n) {
-  background-color: var(--secondary-bg);
+  font-weight: 600;
 }
 
 /* 表格单元格内容样式 */
@@ -2305,6 +2317,68 @@ a.qr-btn {
   line-height: 1.6;
 }
 
+/* 预览区域表格样式 */
+.preview table {
+  margin: 1.5em 0;
+  border-collapse: collapse;
+  width: 100%;
+  border: 1px solid var(--border-color);
+  display: table;
+}
+
+.preview table th,
+.preview table td {
+  padding: 0.8em 1em;
+  border: 1px solid var(--border-color);
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.6;
+  min-width: 100px;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/* 预览区域表格行样式 */
+.preview table tr {
+  background-color: var(--markdown-table-bg);
+  border-top: 1px solid var(--border-color);
+}
+
+.preview table tr:nth-child(2n) {
+  background-color: var(--markdown-table-alt-bg);
+}
+
+/* 预览区域表头样式 */
+.preview table th {
+  background: var(--secondary-bg);
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+/* 预览区域表格容器 */
+.preview .table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin: 1.5em 0;
+}
+
+/* 确保表格内容紧凑 */
+.preview table p {
+  margin: 0;
+  padding: 0;
+}
+
+/* 优化表格内链接样式 */
+.preview table a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.preview table a:hover {
+  text-decoration: underline;
+}
+
 /* 确保预览区域的列表样式正确 */
 .preview ul {
   list-style: none;
@@ -2880,6 +2954,7 @@ createApp({
     const isFileEditing = ref(false);
     const editFileExpiresIn = ref('1d');
     const editFileMaxViews = ref('0');
+    const note = ref(''); // 添加备注数据
 
     // 在 setup() 函数中添加新的状态
     const storageInfo = ref({
@@ -3112,16 +3187,7 @@ createApp({
     if (!isMarkdown.value) return content.value;
     
     try {
-        // 配置 marked 选项
-        marked.setOptions({
-            gfm: true,
-            breaks: true,
-            headerIds: true,
-            listNesting: true,  // 启用列表嵌套
-            // 自定义列表渲染
-            renderer: new marked.Renderer()
-        });
-        
+     
         const rendered = marked.parse(content.value);
         
         // 使用 nextTick 确保在 DOM 更新后应用样式
@@ -3488,7 +3554,8 @@ createApp({
             expiresIn: expiresIn.value,
             isMarkdown: isMarkdown.value,
             customId: customId.value,
-            maxViews: maxViews.value ? parseInt(maxViews.value) : 0
+            maxViews: maxViews.value ? parseInt(maxViews.value) : 0,
+            note: note.value || '' // 如果note为空，传递空字符串，添加备注
           }),
         });
 
@@ -3610,6 +3677,8 @@ createApp({
           formData.append('customId', customId.value);
         }
         formData.append('maxViews', maxViews.value || '0'); // 添加这行
+        // 添加备注信息
+        formData.append('note', note.value || ''); // 如果note为空，传递空字符串
 
         // 创建 XMLHttpRequest 来监控上传进度
         const xhr = new XMLHttpRequest();
@@ -4516,6 +4585,7 @@ createApp({
       cancelFileEdit,
       renderedContent,
       editPreview,
+      note,
     };
   },
 
@@ -4578,6 +4648,34 @@ createApp({
             <input type="checkbox" id="markdown-toggle" v-model="isMarkdown">
             <label for="markdown-toggle">启用 Markdown</label>
         </div>
+
+        <!-- 备注输入框 -->
+        <div class="input-group">
+          <label>备注(可选)</label>
+          <input 
+            type="text" 
+            v-model="note"
+            placeholder="添加备注信息..."
+            class="note-input"
+          >
+        </div>
+        
+        <div class="input-group">
+          <label>链接后缀 (可选)</label>
+          <input 
+            type="text" 
+            v-model="customId"
+            placeholder="留空则自动生成"
+            pattern="[a-zA-Z0-9-_]+"
+            title="只能使用字母、数字、横线和下划线"
+            :disabled="files.length > 1"
+            autocomplete="new-password"
+          >
+          <small v-if="files.length > 1" style="color: #666;">
+            多文件上传时不支持自定义链接
+          </small>
+        </div>
+
         <div class="input-group">
             <label>密码保护</label>
             <input 
@@ -4597,21 +4695,7 @@ createApp({
             <option value="never">永不过期</option>
             </select>
         </div>
-        <div class="input-group">
-          <label>自定义链接后缀 (可选)</label>
-          <input 
-            type="text" 
-            v-model="customId"
-            placeholder="留空则自动生成"
-            pattern="[a-zA-Z0-9-_]+"
-            title="只能使用字母、数字、横线和下划线"
-            :disabled="files.length > 1"
-            autocomplete="new-password"
-          >
-          <small v-if="files.length > 1" style="color: #666;">
-            多文件上传时不支持自定义链接
-          </small>
-        </div>
+
         <div class="input-group">
           <label>可打开次数 (0表示无限制)</label>
           <input 
@@ -4671,9 +4755,20 @@ createApp({
 
         <!-- 文件上传设置 -->
         <div class="settings">
+          <!-- 备注输入框 -->
+          <div class="input-group">
+            <label>备注(可选)</label>
+            <input 
+              type="text" 
+              v-model="note"
+              placeholder="添加备注信息..."
+              class="note-input"
+            >
+          </div>
+
           <!-- 添加自定义链接后缀输入框 -->
           <div class="input-group">
-            <label>自定义链接后缀 (可选)</label>
+            <label>链接后缀 (可选)</label>
             <input 
               type="text" 
               v-model="customId"
@@ -4954,6 +5049,9 @@ createApp({
               </div>
             </div>
             <div class="info">
+              <div v-if="share.note" class="note-highlight">
+                <span class="note-label">备注:</span> {{ share.note }}
+              </div>
               <div>ID: {{ share.id }}</div>
               <div>创建时间: {{ formatDate(share.createdAt) }}</div>
               <div>过期时间: {{ share.expiresAt ? formatDate(share.expiresAt) : '永不过期' }}</div>
@@ -5112,10 +5210,13 @@ createApp({
     const editMarkdown = ref(false); // 添加编辑时的 Markdown 开关状态
     const editExpiresIn = ref('1d'); // 添加编辑时的过期时间状态
     const editMaxViews = ref('0'); // 添加编辑时的访问次数状态
+    const editNote = ref(''); // 添加编辑时的备注状态
+    const note = ref(''); // 添加备注状态
     const maxViews = ref(0); // 添加最大访问次数状态
     const viewCount = ref(0); // 添加已访问次数状态
     const isFileEditing = ref(false);
     const editFileExpiresIn = ref('1d');
+    const editFileNote = ref(''); // 添加编辑时的备注状态
     const editFileMaxViews = ref('0'); // 添加这行，初始化可下载次数
     // 下载等待状态变量
     const downloading = ref(false);
@@ -5154,6 +5255,7 @@ createApp({
         // 添加数据检查，使用默认值 0
         editMaxViews.value = (data.maxViews || 0).toString();
         maxViews.value = data.maxViews || 0;
+        editNote.value = data.note || '';
         viewCount.value = data.viewCount || 0;
         isEditing.value = true;
       } catch (err) {
@@ -5180,6 +5282,7 @@ createApp({
             content: editContent.value,
             isMarkdown: editMarkdown.value,
             expiresIn: editExpiresIn.value,
+            note: editNote.value,
             maxViews: parseInt(editMaxViews.value) || 0 // 添加访问次数
           })
         });
@@ -5197,6 +5300,7 @@ createApp({
         expiresAt.value = data.expiresAt ? new Date(data.expiresAt) : null;
         maxViews.value = data.maxViews; // 更新访问次数
         viewCount.value = data.viewCount; // 更新已访问次数
+        note.value = data.note; // 更新备注
         isEditing.value = false;
       } catch (err) {
         error.value = err.message;
@@ -5801,6 +5905,7 @@ createApp({
         // 设置编辑状态
         editFileExpiresIn.value = '1d'; // 默认值
         editFileMaxViews.value = (data.maxViews || 0).toString(); // 设置当前的下载次数限制
+        editFileNote.value = data.note || ''; // 设置当前的备注
         isFileEditing.value = true;
       } catch (err) {
         console.error('Edit error:', err);
@@ -5828,7 +5933,8 @@ createApp({
           },
           body: JSON.stringify({
             expiresIn: editFileExpiresIn.value,
-            maxViews: parseInt(editFileMaxViews.value) || 0
+            maxViews: parseInt(editFileMaxViews.value) || 0,
+            note: editFileNote.value // 发送备注
           })
         });
 
@@ -5843,7 +5949,8 @@ createApp({
           ...fileInfo.value,
           expiresAt: data.expiresAt,
           maxViews: data.maxViews,
-          viewCount: data.viewCount
+          viewCount: data.viewCount,
+          note: data.note // 更新备注
         };
         
         isFileEditing.value = false;
@@ -6627,10 +6734,13 @@ createApp({
       themeIcon,  // 添加这行
       editExpiresIn, // 添加编辑时的过期时间状态
       editMaxViews, // 添加编辑时的访问次数状态
+      editNote, // 添加编辑时的备注状态
+      note,  // 当前备注状态
       maxViews, // 添加这行
       viewCount, // 添加这行
       isFileEditing,
       editFileExpiresIn,
+      editFileNote, // 添加编辑时的备注状态
       editFileMaxViews, // 添加这行
       startFileEdit,
       saveFileEdit,
@@ -6646,6 +6756,8 @@ createApp({
 }).mount('#app');
 `;
 
+const faviconBase64 =
+  "AAABAAEAICAAAAEAIACoEAAAFgAAACgAAAAgAAAAQAAAAAEAIAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKR2ldOfbI3/n2yN/59sjf+fbI3/n2yN/59sjf+fbI3/n2yN/59sjf+fbI3/n2yN/59sjf+fbI3/o3OS76FtjT4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAn2yN/9/v+v/e7/r/6PT9//D3///w9///8Pf///D3///w9///8Pf///D3///r9P3/3u/6/97v+v+fbI3/pHSR+51tjT4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKBxlpmfbI79n2yN/59sjf+fbI3/n2yN/59sjf+fbI3/6fP9/97v+v/e7/r/7/f+//H3///w9///8Pf///D3///w9///8Pf///D3///p9P3/3u/6/59sjf/iwrD/pHSR+51tjT4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAnmyN/aedyf+noc3/p6HN/6ehzf+noc3/p6HN/59sjf/w9///5fL8/97v+v/u9/z/8Pf+//D3///w9///8Pf///D3///w9///8Pf///D3///m8vz/n2yN//neu//iwrD/pHSR+6Bqiz4AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACfbI3/p6HN/6ehzf+noc3/p6HN/6ehzf+noc3/n2yN/+z2/v/v9///4vH7/97v+v/g8Pv/7vf///D3///w9///8Pf///D3///w9///8Pf///D3//+wiqT/n2yN/59sjf+fbI3/o3OS7wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJ9sjf+noc3/p6HN/6Z9m/+fbI3/pniV/9C/xP+fbI3/4PD6/+/2/v/v9///4fD7/97v+v/i8fv/7/f///D3///w9///8Pf///D3///w9///8Pf//+/3///j8fv/3u/6/97v+v+fbI3/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAn2yN/6ehzf+noc3/n2yN//neu//53rv/+d67/59sjf/e7/r/4vH7/+/3//+qgJ7/n2yN/59sjf+fbI3/q4Ce//D3///w9///8Pf///D3///w9///8Pf//+/2///h8fv/3u/6/59sjf8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACfbI3/p6HN/6ehzf+fbI3/+d67//neu//53rv/n2yN/+Xy/P/e7/r/5PL8//D3///r9P3/3u/6/97v+v/o8/3/8Pf///D3///w9///8Pf///D3///w9///8Pf//+72/v/g8Pv/n2yN/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJ9sjf+noc3/p6HN/59sjf/53rv/+d67//neu/+fbI3/6fP9/+Lw+//e7/r/qn+e/59sjf+fbI3/n2yN/59sjf+fbI3/n2yN/59sjf+fbI3/q4Ce//D3///z+P//8Pf//+31/v+fbI3/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAn2yN/6ehzf+noc3/n2yN//neu//53rv/+d67/59sjf/f7/r/6fT9/+Dw+v/f7/r/6/X+//D3///l8vz/3u/6/9/v+v/t9v7/8Pf///D3///w9///9/v///z+///y+P//8Pf//59sjf8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACfbI3/p6HN/6ehzf+fbI3/+d67//neu//53rv/n2yN/97v+v/f7/r/6fT9/9/v+v/f7/r/7fb+/+/2///i8fv/3u/6/+Dw+//u9///8Pf///L4///7/f///v////b6///w9///n2yN/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJ9sjf+noc3/p6HN/59sjf/53rv/+d67//neu/+fbI3/3u/6/97v+v/h8fv/qn+e/59sjf+fbI3/n2yN/59sjf+fbI3/n2yN/59sjf+rgJ7/8Pf///H4///2+v//8Pf///D3//+fbI3/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAn2yN/6ehzf+noc3/n2yN//neu//53rv/+d67/59sjf/e7/r/3u/6/97v+v/j8fz/5fP8/97v+v/j8vv/8Pf//+32/v/e8Pr/3u/6/+bz/P/w9///8Pf///D3///w9///8Pf//59sjf8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACfbI3/p6HN/6ehzf+fbI3/+d67//neu//53rv/n2yN/97v+v/e7/r/3u/6/6h/nf+fbI3/n2yN/59sjf+fbI3/n2yN/6qAnv/e7/r/qH+d/59sjf+rgJ7/8Pf///D3///w9///n2yN/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJ9sjf+noc3/p6HN/59sjf/53rv/+d67//neu/+fbI3/3u/6/97v+v/e7/r/3u/6/97v+v/p9P3/4fD7/97v+v/q9P3/8Pf//+fz/f/e7/r/3+/6/+v1/v/w9///8Pf///D3//+fbI3/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAn2yN/6ehzf+noc3/n2yN//neu//53rv/+d67/59sjf/e7/r/3u/6/97v+v/u9/z/4fD6/9/w+v/q9f3/3/D6/97w+v/t9v7/8Pf//+Tx/P/e7/r/3+/6/+32/v/w9///8Pf//59sjf8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACfbI3/p6HN/6ehzf+fbI3/+d67//neu//53rv/n2yN/97v+v/e7/r/4/H7//r9/v/r9vz/3u/6/+Dw+//q9P3/3u/6/+Dw+//u9///8Pb//+Hw+//e7/r/4fH7/+/2///w9///n2yN/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJ9sjf+noc3/p6HN/59sjf/53rv/+d67//neu/+fbI3/3u/6/97v+v+of53/4fH7/8O3y//Dt8v/3u/6/6l/nf/n8/3/w7fL/8a4zP/v9///q4Ce/9/w+//Dt8v/xrjM/+/3//+fbI3/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAn2yN/6ehzf+noc3/n2yN//neu//53rv/+d67/59sjf/e7/r/3u/6/6h/nf/e7/r/w7fL/8O3y//e7/r/qH+d/+bz/P/Hucz/w7fL/+Xy/P+rgJ7/7Pb+/8O3y//Dt8v/5fP8/59sjf8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACfbI3/p6HN/6ehzf+fbI3/+d67//neu//53rv/n2yN/97v+v/e7/r/3u/6/97v+v/e7/r/3u/6/97v+v/e7/r/3u/6/+j0/f/i8Pv/3u/6/+jz/f/w9///6fT9/97v+v/e7/r/n2yN/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJ9sjf+noc3/p6HN/59sjf/53rv/+d67//neu/+fbI3/3u/6/97v+v/e7/r/3u/6/97v+v/e7/r/3u/6/97v+v/e7/r/3+/6/+n0/f/f8Pv/3+/6/+z1/v/w9///5/P8/97v+v+fbI3/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAn2yN/6ehzf+noc3/n2yN//neu//53rv/+d67/7KGm/+fbI3/n2yN/59sjf+fbI3/n2yN/59sjf+fbI3/n2yN/59sjf+fbI3/n2yN/59sjf+fbI3/n2yN/59sjf+fbI3/n2yN/6N1lNEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACfbI3/p6HN/6ehzf+fbI3/+d67//neu//53rv/+d67//neu//53rv/+d67//neu//53rv/+d67//neu//53rv/+d67//neu//53rv/+d67/9C/xP+noc3/p6HN/59sjf8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJ9sjf+noc3/p6HN/59sjf/53rv/+d67//neu//53rv/+d67//neu//53rv/+d67//neu//53rv/+d67//neu//53rv/+d67//neu//53rv/pniV/6ehzf+noc3/n2yN/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAn2yN/6ehzf+noc3/n2yN//neu//53rv/+d67//neu//53rv/+d67//neu//53rv/+d67//neu//53rv/+d67//neu//53rv/+d67//neu/+fbI3/p6HN/6ehzf+fbI3/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACfbI3/p6HN/6ehzf+fbI3/+d67//neu//Op6X/o3GO/59sjf+fbI3/n2yN/59sjf+fbI3/n2yN/59sjf+fbI3/o3GO/86opf/53rv/+d67/59sjf+noc3/p6HN/59sjf8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJ9sjf+noc3/p6HN/6Z7m/+fbI3/n2yN/59sjf+t2vH/ruP5/67j+f+u4/n/ruP5/67j+f+u4/n/ruP5/67j+f+t2vH/n2yN/59sjf+fbI3/pn2b/6ehzf+noc3/n2yN/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAn2yN/6ehzf+noc3/p6HN/6ehzf+noc3/n26O/63g9v+u4/n/ruP5/67j+f+u4/n/ruP5/67j+f+u4/n/ruP5/67f9f+fbo7/p6HN/6ehzf+noc3/p6HN/6ehzf+fbI3/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACebI39ta3W/7q03v+6tN7/urTe/7q03v+lgKP/p6vG/67j+f+u4/n/ruP5/6OIp/+jiKf/ruP5/67j+f+u4/n/pqrF/6WAo/+6tN7/urTe/7q03v+6tN7/tazX/59sjvsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKBwkI+ebI39n2yN/59sjf+fbI3/n2yN/59sjf+fbI3/pJWx/63c8v+u4/n/o4em/6OIp/+u4/n/rdzy/6SVsf+fbI3/n2yN/59sjf+fbI3/n2yN/59sjf+ebI39n22RjwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAJ9ffwigfpyxoXaW96ezzv+s0+r/rNPq/6izzf+hdpb3on6dsZ9ffwgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACebYw6n3KTuZ9wkemfcJHpn3OSuaFrjzgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA/+AAP//gAB/wAAAP8AAAB/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAA/AAAAPwAAAD8AAAA/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP//AP///8P/8=";
 // HTML 模板
 const html = `<!DOCTYPE html>
 <html lang="zh">
@@ -6653,6 +6765,7 @@ const html = `<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CloudPaste - 在线剪贴板</title>
+    <link rel="icon" href="data:image/x-icon;base64,${faviconBase64}" type="image/x-icon">
     <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue/3.2.31/vue.global.prod.min.js"></script>
     <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/marked/4.0.2/marked.min.js"></script>
     <link rel="stylesheet" href="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/highlight.js/11.4.0/styles/github.min.css">
@@ -6693,6 +6806,7 @@ const shareHtml = `<!DOCTYPE html>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CloudPaste - 分享内容</title>
+    <link rel="icon" href="data:image/x-icon;base64,${faviconBase64}" type="image/x-icon">
     <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/vue/3.2.31/vue.global.prod.min.js"></script>
     <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/marked/4.0.2/marked.min.js"></script>
     <link rel="stylesheet" href="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-M/highlight.js/11.4.0/styles/github.min.css">
@@ -6773,7 +6887,18 @@ const shareHtml = `<!DOCTYPE html>
                 
                 <template v-if="isFileEditing">
                   <div class="settings" style="margin: 1rem 0;">
+                    <!-- 添加备注输入框 -->
                     <div class="input-group">
+                      <label>备注</label>
+                      <input 
+                        type="text" 
+                        v-model="editFileNote"
+                        placeholder="添加备注信息"
+                        class="form-input"
+                      >
+                    </div>  
+
+                    <div class="input-group">                 
                       <label>过期时间</label>
                       <select v-model="editFileExpiresIn" class="form-select">
                         <option value="1h">1小时</option>
@@ -6859,7 +6984,7 @@ const shareHtml = `<!DOCTYPE html>
                           v-model="editContent"
                           style="width: 100%; height: 100%; padding: 1rem; border: none; outline: none; resize: none;"
                         ></textarea>
-              </div>
+                      </div>
                       <!-- Markdown 预览区域 -->
                       <div 
                         v-if="editMarkdown" 
@@ -6881,6 +7006,17 @@ const shareHtml = `<!DOCTYPE html>
                           <label for="edit-markdown-toggle">启用 Markdown</label>
                         </div>
                       </div>
+
+                      <!-- 添加备注输入框 -->
+                      <div class="input-group">
+                        <label>备注</label>
+                        <input 
+                          type="text" 
+                          v-model="editNote"
+                          placeholder="添加备注信息"
+                          class="form-input"
+                        >
+                      </div>                      
                       
                       <!-- 过期时间选择框 -->
                       <div class="input-group">
@@ -7053,7 +7189,7 @@ async function handlePaste(request, env) {
       }
 
       const data = await request.json();
-      const { content, password: inputPassword, expiresIn, isMarkdown = false, customId = "", maxViews = 0 } = data;
+      const { content, password: inputPassword, expiresIn, isMarkdown = false, customId = "", maxViews = 0, note = '' } = data;
 
       if (!content) {
         return new Response(
@@ -7122,6 +7258,7 @@ async function handlePaste(request, env) {
       const paste = {
         content,
         isMarkdown,
+        note, 
         createdAt: new Date().toISOString(),
         expiresAt: expiresIn === "never" ? null : utils.calculateExpiryTime(expiresIn)?.toISOString(),
         maxViews: parseInt(maxViews) || 0, // 添加这行
@@ -7269,6 +7406,7 @@ async function handlePaste(request, env) {
           isMarkdown: paste.isMarkdown,
           createdAt: paste.createdAt,
           expiresAt: paste.expiresAt,
+          note: paste.note, // 返回更新后的备注
           maxViews: paste.maxViews || 0, // 确保返回数值
           viewCount: paste.viewCount || 0, // 确保返回数值
           status: "success",
@@ -7537,6 +7675,7 @@ async function handleFile(request, env, ctx) {
               expiresAt: expiresIn === "never" ? null : utils.calculateExpiryTime(expiresIn)?.toISOString(),
               maxViews: maxViews, // 添加最大访问次数
               viewCount: 0, // 初始化访问计数
+              note: formData.get("note") || "", // 添加备注信息
             };
 
             if (inputPassword) {
@@ -7570,6 +7709,7 @@ async function handleFile(request, env, ctx) {
               expiresAt: metadata.expiresAt,
               maxViews: metadata.maxViews, // 在返回结果中添加最大访问次数
               viewCount: 0,
+              note: metadata.note || "", // 添加备注信息
               status: "success",
               url: `${url.origin}/share/file/${id}`,
               directDownloadUrl: `${url.origin}/download/${id}`, // 添加直接下载链接
@@ -7710,6 +7850,7 @@ async function handleFile(request, env, ctx) {
               filename: metadata.filename,
               type: metadata.type,
               size: metadata.size,
+              note: metadata.note || "", // 添加备注信息
               uploadedAt: metadata.uploadedAt,
               expiresAt: metadata.expiresAt,
               maxViews: parseInt(metadata.maxViews) || 0,
@@ -8154,6 +8295,7 @@ export default {
                       id: key.name,
                       type: "paste",
                       content: paste.content?.substring(0, 100) + "...", // 只获取前100个字符
+                      note: paste.note || '', // 添加备注字段
                       createdAt: paste.createdAt,
                       expiresAt: paste.expiresAt,
                       hasPassword: !!paste.passwordHash,
@@ -8192,6 +8334,7 @@ export default {
                       type: "file",
                       filename: metadata.filename || object.key,
                       size: metadata.size || object.size,
+                      note: metadata.note || '', // 添加备注字段
                       createdAt: metadata.uploadedAt || object.uploaded,
                       expiresAt: metadata.expiresAt,
                       hasPassword: !!metadata.passwordHash,
@@ -8442,7 +8585,7 @@ export default {
             try {
               const pathParts = url.pathname.split("/");
               const id = pathParts[pathParts.length - 2];
-              const { content, isMarkdown, expiresIn, maxViews } = await request.json();
+              const { content, isMarkdown, expiresIn, note, maxViews } = await request.json();
 
               const storedPaste = await env.PASTE_STORE.get(id);
               if (!storedPaste) {
@@ -8462,6 +8605,7 @@ export default {
               paste.content = content;
               paste.isMarkdown = isMarkdown;
               paste.expiresAt = expiresIn === "never" ? null : utils.calculateExpiryTime(expiresIn)?.toISOString();
+              paste.note = note; // 更新备注
 
               // 如果修改了最大访问次数，重置访问计数
               const newMaxViews = parseInt(maxViews) || 0;
@@ -8479,6 +8623,7 @@ export default {
                   expiresAt: paste.expiresAt,
                   maxViews: paste.maxViews,
                   viewCount: paste.viewCount,
+                  note: paste.note // 返回更新后的备注
                 }),
                 {
                   headers: {
@@ -8587,7 +8732,7 @@ export default {
             try {
               const pathParts = url.pathname.split("/");
               const id = pathParts[pathParts.length - 2];
-              const { expiresIn, maxViews } = await request.json();
+              const { expiresIn, maxViews, note } = await request.json();
 
               const file = await env.FILE_STORE.get(id);
               if (!file) {
@@ -8605,6 +8750,7 @@ export default {
 
               const metadata = file.customMetadata;
               metadata.expiresAt = expiresIn === "never" ? null : utils.calculateExpiryTime(expiresIn)?.toISOString();
+              metadata.note = note; // 更新备注
               // 如果修改了最大下载次数，重置下载计数
               const newMaxViews = parseInt(maxViews) || 0;
               if (metadata.maxViews !== newMaxViews) {
@@ -8623,6 +8769,7 @@ export default {
                   expiresAt: metadata.expiresAt,
                   maxViews: metadata.maxViews,
                   viewCount: metadata.viewCount,
+                  note: metadata.note // 返回更新后的备注
                 }),
                 {
                   headers: { "Content-Type": "application/json" },
